@@ -1,0 +1,101 @@
+@BankingService_HostAddress = http://localhost:8080
+
+# Run requests in order. Change the email before registering again.
+# @name register
+POST {{BankingService_HostAddress}}/api/customer/register
+Content-Type: application/json
+
+{
+  "customer": {
+    "firstName": "Taylor",
+    "lastName": "Reed",
+    "email": "taylor.reed@example.com"
+  }
+}
+
+###
+# @name login
+POST {{BankingService_HostAddress}}/api/access/login
+Content-Type: application/json
+
+{
+  "identifier": "taylor.reed@example.com",
+  "pin": "{{register.response.body.$.pin}}"
+}
+
+###
+GET {{BankingService_HostAddress}}/api/customer/get?customerNumber={{register.response.body.$.customer.customerNumber}}
+Authorization: Bearer {{login.response.body.$.sessionToken}}
+
+###
+# @name current
+POST {{BankingService_HostAddress}}/api/account/create
+Authorization: Bearer {{login.response.body.$.sessionToken}}
+Content-Type: application/json
+
+{"accountType":"CURRENT"}
+
+###
+# @name savings
+POST {{BankingService_HostAddress}}/api/account/create
+Authorization: Bearer {{login.response.body.$.sessionToken}}
+Content-Type: application/json
+
+{"accountType":"SAVINGS"}
+
+###
+POST {{BankingService_HostAddress}}/api/account/deposit
+Authorization: Bearer {{login.response.body.$.sessionToken}}
+Content-Type: application/json
+
+{
+  "transaction": {
+    "transactionType": "DEPOSIT",
+    "amount": 100.25,
+    "targetAccountNumber": "{{current.response.body.$.account.accountNumber}}"
+  }
+}
+
+###
+POST {{BankingService_HostAddress}}/api/account/transfer
+Authorization: Bearer {{login.response.body.$.sessionToken}}
+Content-Type: application/json
+
+{
+  "transaction": {
+    "transactionType": "TRANSFER",
+    "amount": 25.00,
+    "sourceAccountNumber": "{{current.response.body.$.account.accountNumber}}",
+    "targetAccountNumber": "{{savings.response.body.$.account.accountNumber}}"
+  }
+}
+
+###
+POST {{BankingService_HostAddress}}/api/account/withdraw
+Authorization: Bearer {{login.response.body.$.sessionToken}}
+Content-Type: application/json
+
+{
+  "transaction": {
+    "transactionType": "WITHDRAWAL",
+    "amount": 75.25,
+    "targetAccountNumber": "{{current.response.body.$.account.accountNumber}}"
+  }
+}
+
+###
+POST {{BankingService_HostAddress}}/api/account/close
+Authorization: Bearer {{login.response.body.$.sessionToken}}
+Content-Type: application/json
+
+{"accountNumber":"{{current.response.body.$.account.accountNumber}}"}
+
+###
+GET {{BankingService_HostAddress}}/api/customer/accounts?customerNumber={{register.response.body.$.customer.customerNumber}}
+Authorization: Bearer {{login.response.body.$.sessionToken}}
+
+###
+POST {{BankingService_HostAddress}}/api/access/logout
+Authorization: Bearer {{login.response.body.$.sessionToken}}
+
+###
